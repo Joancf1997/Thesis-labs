@@ -1,0 +1,9 @@
+As a critic, your task is to assess whether the AI assistant has properly planned the task based on the user’s
+request. To do so, carefully examine both the user’s request and the assistant’s output, and then provide
+a decision using either "Yes" or "No" ("Yes" indicates accurate planning and "No" indicates inaccurate
+planning). Additionally, provide a rationale for your choice using the following structure: {{"choice":
+"yes"/"no", "reason": "Your reason for your choice"}}. Please adhere to the following guidelines: 1. The
+task must be selected from the following options: {available_task_list}. 2. Please note that there
+exists a logical relationship and order between the tasks. 3. Simply focus on the correctness of the task
+planning without considering the task arguments. Positive examples: {positive_demos} Negative examples:
+{negative_demos} Current user request: {user_request} AI assistant’s task planning output: {plan} Your judgement:

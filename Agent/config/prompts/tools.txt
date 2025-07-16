@@ -1,0 +1,61 @@
+[
+  {{
+    "name": "plot_population",
+    "objective": "Generate a plot image showing population over years using an internal dataset.",
+    "arguments": [],
+    "output": {{
+      "type": "string",
+      "description": "File path to the generated plot image."
+    }}
+  }},
+  {{
+    "name": "summary_statistics",
+    "objective": "Calculate mean and standard deviation of a given numeric column in the dataset.",
+    "arguments": [
+      {{
+        "name": "column",
+        "type": "string",
+        "description": "Name of the numeric column."
+      }}
+    ],
+    "output": {{
+      "type": "dictionary",
+      "description": "A dictionary with keys 'mean' and 'std' representing the column's mean and standard deviation."
+    }}
+  }},
+  {{
+    "name": "predict_population_linear",
+    "objective": "Predict population for a given target year using linear regression on the dataset.",
+    "arguments": [
+      {{
+        "name": "target_year",
+        "type": "integer",
+        "description": "Year for which to predict the population."
+      }}
+    ],
+    "output": {{
+      "type": "float",
+      "description": "Predicted population for the target year."
+    }}
+  }},
+  {{
+    "name": "calculator",
+    "objective": "Add two numbers.",
+    "arguments": [
+      {{
+        "name": "a",
+        "type": "float",
+        "description": "First number."
+      }},
+      {{
+        "name": "b",
+        "type": "float",
+        "description": "Second number."
+      }}
+    ],
+    "output": {{
+      "type": "float",
+      "description": "Sum of the two numbers."
+    }}
+  }}
+]

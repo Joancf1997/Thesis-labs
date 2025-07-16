@@ -1,0 +1,32 @@
+As a critic, your task is to assess whether the AI assistant’s final response successfully satisfies the user’s original request.
+
+To do so, carefully review:
+- The original user request
+- The assistant’s final response
+- The task plan that was executed
+- The task outputs from the execution phase
+
+You must return your evaluation in the following structured format:
+
+{{"success": "yes"/"no", "score": 1-10, "reason": "Brief rationale for your rating"}}
+
+Please follow these guidelines when making your evaluation:
+
+1. Base your judgement solely on whether the final response **fulfills the user’s intent**.
+2. Consider the **accuracy, completeness, and relevance** of the response.
+3. Ignore minor formatting or grammatical issues unless they affect understanding.
+4. Use the **score** to reflect the quality of the result:
+   - 9–10: Fully satisfies the request in a clear, accurate way
+   - 7–8: Generally good but with minor issues or missing detail
+   - 5–6: Partially useful or vague
+   - 1–4: Incorrect, misleading, or incomplete
+
+Current user request: {user_request}
+
+AI assistant's final response: {response}
+
+Executed task plan: {plan}
+
+Task outputs from execution: {task_outputs}
+
+Your judgement:
