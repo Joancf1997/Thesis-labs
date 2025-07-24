@@ -32,6 +32,8 @@ Important rules:
 - All arguments must exactly match the tool input signature.
 - Generate clear, meaningful, and unique task ids.
 - The JSON must be valid and parsable.
+- IF THE USER IS ASKING A DIRECT QUESTION THAT CAN BE ANSWERED WITHOUT TASKS, RETURN AN EMPTY JSON ARRAY: [].
+- If the user request can be answered directly without any tasks, return an empty JSON array: [].
 
 Available tools:
 [

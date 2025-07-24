@@ -4,17 +4,24 @@ import sys
 import inspect
 from pydantic import Field
 from PIL import Image as PILImage
+from langchain.chains import LLMChain
 from typing_extensions import TypedDict
 from IPython.display import Image, display
 from langgraph.graph import START, StateGraph
 from langchain.chat_models import init_chat_model
 from typing import Dict, List, Literal,  Optional
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage
+from langchain_core.prompts import SystemMessagePromptTemplate, PromptTemplate, ChatPromptTemplate
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.utility import load_config, Settings, load_prompt
 import utils.tools as ToolsLlm
+from utils.utility import Settings, load_prompt
+import logging
+from langchain.chains import ConversationChain
+from langchain.memory import ConversationBufferMemory
 
+
+logger = logging.getLogger(__name__)
 
 class State(TypedDict):
     question: str
@@ -40,34 +47,101 @@ class Plan(TypedDict):
 class Agent(): 
     def __init__(self, settings: Settings):
         self.llm_config = settings.llm
+        self.session_config = {"configurable": {"thread_id": "1"}}
         self.state: State = {"question":"", "plan": [], "outputs": [], "response": ""}
         self.config_prompt()
         self.config_llm()
-        graph_builder = StateGraph(State).add_sequence(
-            [self.task_planning, self.validate_plan, self.run_plan, self.generate_response]
-        )
-        graph_builder.add_edge(START, "task_planning")
+        self.workflow_config()
+
+    def workflow_config(self):
+        graph_builder = StateGraph(State)
+        graph_builder.add_node("task_planning", self.task_planning)
+        graph_builder.add_node("validate_plan", self.validate_plan)
+        graph_builder.add_node("run_plan", self.run_plan)
+        graph_builder.add_node("generate_response", self.generate_response)
+        graph_builder.add_node("direct_response", self.direct_response)
+        
+
+        graph_builder.set_entry_point("task_planning")
+        graph_builder.add_edge("task_planning", "validate_plan")
+        graph_builder.add_conditional_edges("validate_plan", self.validation_router)
+        graph_builder.add_edge("run_plan", "generate_response")
+        graph_builder.set_finish_point("generate_response")
+        graph_builder.set_finish_point("direct_response")
+
         memory = MemorySaver()
-        self.request = graph_builder.compile(checkpointer=memory, interrupt_before=["run_plan"])
+        # self.request = graph_builder.compile(checkpointer=memory, interrupt_before=["run_plan"])
+        self.request = graph_builder.compile(checkpointer=memory)
+
         image_bytes = self.request.get_graph().draw_mermaid_png()
         img = PILImage.open(io.BytesIO(image_bytes))
         img.save("graph_output.pdf", "PDF")
 
+    def validation_router(self, state: dict) -> str:
+        logging.info("validation router..")
+        if len(state.get("plan")) == 0:
+            logging.info("No plan found, skipping validation.")
+            return "direct_response"
+        
+        if state.get("validation"):
+            return "run_plan"
+        else:
+            return "task_planning"
+        
+    def ask(self, question: str):
+        if False:
+            for step in self.request.stream(
+                {"question": question}, 
+                self.session_config, 
+                stream_mode="updates"
+            ):
+                print(step)
+        else: 
+            result = self.request.invoke(
+                {"question": question},
+                config=self.session_config
+            )
+            print(result['response'])
+
+
     def config_prompt(self):
-        self.planning_prompt = load_prompt("planning_stage")
-        self.response_prompt = load_prompt("response_stage")
-        self.planning_prompt_temp = ChatPromptTemplate([("system", self.planning_prompt), ("user", "Question: {input}")])
+        self.planning_prompt = load_prompt('planning_stage')
+        self.response_prompt = load_prompt('response_stage')
+        self.direct_response_prompt = load_prompt('direct_response')
+        self.task_planning_promp = ChatPromptTemplate([("system", self.planning_prompt), ("user", "Question: {input}")])
     
     def config_llm(self):
-        self.llm = init_chat_model(model=self.llm_config.model_name, model_provider=self.llm_config.provider)
-        self.plan_structure_llm = self.llm.with_structured_output(Plan)
+        base_llm = init_chat_model(model=self.llm_config.model_name, model_provider=self.llm_config.provider)
+        memory = ConversationBufferMemory(return_messages=True)
+        self.llm = ConversationChain(
+            llm=base_llm,
+            memory=memory,
+            verbose=False
+        )
+        
+        self.plan_structure_llm = base_llm.with_structured_output(Plan)
     
+    def direct_response(self, state: State):
+        logging.info("Direct response stage started...")
+        direct_prompt = PromptTemplate(
+            input_variables=["user_request"],
+            template=self.direct_response_prompt,
+        )
+        prompt_str = direct_prompt.format(user_request=state["question"])
+        response = self.llm.predict(input=prompt_str)
+        logging.info("Model response: %s", response)
+        return {"response": response}
+
+
     def task_planning(self, state: State): 
-      prompt = self.planning_prompt_temp.invoke({"input": state["question"],})
+      logging.info("Task planning stage started...")
+      prompt = self.task_planning_promp.invoke({"input": state["question"],})
       result = self.plan_structure_llm.invoke(prompt)
+      logging.info("Plan: %s", result["plan"])
       return {"plan": result["plan"]}
 
     def validate_plan(self, state: State):
+        logging.info("Validate planning stage started...")
         task_ids = set()
         errors = []
         for task in state["plan"]:
@@ -131,10 +205,15 @@ class Agent():
                 if missing:
                     errors.append(f"Task {task['id']} is missing args: {missing}")
         if errors:
-            raise ValueError("Plan validation failed:\n" + "\n".join(errors))
+            logging.info("Plan validation failed:\n" + "\n".join(errors))
+            # raise ValueError("Plan validation failed:\n" + "\n".join(errors))
+            return {"validation": False}
+        
+        logging.info("Plan validation PASSED...")
         return {"validation": True}
 
     def run_plan(self, state: State): 
+        logging.info("Run plan stage started...")
         outputs = {}
         def resolve_args(args_list):
             resolved = {}
@@ -169,31 +248,19 @@ class Agent():
                 raise RuntimeError("Circular dependency or missing dependencies detected")
         return {"outputs":  outputs}
 
-    def generate_response(self, state): 
-        return {"response": "Respuesta del agente"}
+    def generate_response(self, state: State): 
+        logging.info("Response stage started...")
+        response_stage_prompt = PromptTemplate(
+            input_variables=["user_request", "plan", "task_results"],
+            template=self.response_prompt,
+        )
+        prompt_str = response_stage_prompt.format(
+            user_request=state["question"],
+            plan=state["plan"],
+            task_results=state["outputs"]
+        )
+        response = self.llm.predict(input=prompt_str)
+        logging.info("Model response: %s", response)
+        return {"response": response}
 
-
-# Agent Instance
-settings = Settings(**load_config("config/settings.yaml"))
-agent = Agent(settings)
-
-
-# Session thread
-config = {"configurable": {"thread_id": "1"}}
-for step in agent.request.stream(
-    {"question": "Forecast the population for 2029."}, 
-    config, 
-    stream_mode="updates"
-):
-    print(step)
-try:
-    user_approval = input("Do you want to go to execute query? (yes/no): ")
-except Exception:
-    user_approval = "no"
-
-if user_approval.lower() == "yes":
-    for step in agent.request.stream(None, config, stream_mode="updates"):
-        print(step)
-else:
-    print("Operation cancelled by user.")
 
