@@ -244,6 +244,12 @@ class Agent():
                         data={"prompt": prompt_str, "response": response}))
         self.db.commit()
         return {"response": response}
+    
+    def check_tools(self, pred, label):
+        items_metric = len(set(pred).intersection(label))     # items
+        order_metric = sum(1 for i in range(min(len(pred), len(label))) if pred[i] == label[i])  # Order
+        print("items", items_metric, "order", order_metric, "total", len(label))
+        return {"items": items_metric, "order": order_metric, "total": len(label)}
 
     def task_planning(self, state: State):
         step = AgentStep(run_id=self.run_id, step_type="task_planning", input=state["question"])
@@ -253,6 +259,11 @@ class Agent():
 
         prompt = self.task_planning_promp.invoke({"input": state["question"]})
         result = self.plan_structure_llm.invoke(prompt)
+
+        if True: 
+            task_list = [item["task"] for item in result["plan"]]
+            print(task_list)
+            self.check_tools(task_list, ['predict_population_linear', 'plot_population'])  
 
         self.db.add(LLMCall(step_id=step.id, prompt=str(prompt), response=str(result), model_name=self.llm_config.model_name))
         step.output = result
