@@ -18,6 +18,7 @@ from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain.chat_models import init_chat_model
 from langchain.chains import ConversationChain
 from langchain.memory import ConversationBufferMemory
+from GPTJudge import PlanJudge
 
 from sqlalchemy import (
     create_engine, Column, String, Text, DateTime, ForeignKey, JSON
@@ -121,7 +122,7 @@ class Log(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 # === Create tables ===
-Base.metadata.drop_all(bind=engine)
+# Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
 
 # === TypedDicts for state ===
@@ -151,6 +152,7 @@ class Agent():
         self.llm_config = settings.llm
         self.session_config = {"configurable": {"thread_id": "1"}}
         self.state: State = {"question": "", "plan": [], "outputs": [], "response": ""}
+        self.planJudge = PlanJudge(settings.llm)
 
         self.db = SessionLocal()
         self.session = UserSession()
@@ -214,9 +216,9 @@ class Agent():
         self.db.close()
 
     def config_prompt(self):
-        self.planning_prompt = load_prompt('planning_stage')
-        self.response_prompt = load_prompt('response_stage')
-        self.direct_response_prompt = load_prompt('direct_response')
+        self.planning_prompt = load_prompt('1.planning_stage')
+        self.response_prompt = load_prompt('2.response_stage')
+        self.direct_response_prompt = load_prompt('2.direct_response')
         self.task_planning_promp = ChatPromptTemplate([("system", self.planning_prompt), ("user", "Question: {input}")])
 
     def config_llm(self):
@@ -255,6 +257,12 @@ class Agent():
         self.db.add(LLMCall(step_id=step.id, prompt=str(prompt), response=str(result), model_name=self.llm_config.model_name))
         step.output = result
         self.db.commit()
+
+        # Plan evaluation GPT - Judge 
+        plan_evaluation = self.planJudge.evaluate(state["question"], result["plan"])
+        print(plan_evaluation)
+
+
         return {"plan": result["plan"]}
 
     def validate_plan(self, state: State):
@@ -347,4 +355,5 @@ class Agent():
         self.db.add(Message(run_id=self.run_id, role="assistant", content=response, message_type="plain"))
         step.output = response
         self.db.commit()
+        print(response)
         return {"response": response}

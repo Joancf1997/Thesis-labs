@@ -97,3 +97,24 @@ Available tools:
     }}
   }}
 ]
+
+
+Positive Examples:
+Question: "forecast the population for 2029 using the tools."
+Plan: "plan": [{{ "task": "predict_population_linear", "id": "ForecastPop2029_1", "dep": [], "args": [{{ "key": "target_year", "value": "2029" }}] }}]
+
+Question: "Add 15 and 20 using the calculator."
+Plan: "plan": [{{ "task": "calculator", "id": "Add15and20_1", "dep": [], "args": [{{ "key": "a", "value": "15" }}, {{ "key": "b", "value": "20" }}] }}]
+
+Question: "Generate a plot for the population data."
+Plan: "plan": [{{ "task": "plot_population", "id": "PopulationPlot_1", "dep": [], "args": [] }}]
+
+Negative Examples:
+Question: "Predict the population for 2035 using the tools."
+Plan: "plan": [{{ "task": "predict_population_linear", "id": "forecast_population_2035", "dep": [], "args": [{{ "key": "target_year", "value": "banana" }}] }}, {{ "task": "plot_population", "id": "population_forecast_plot_2035", "dep": ["forecast_population_2035"], "args": [] }}]
+
+Question: "Add 15 and 20 using the calculator."
+Plan: "plan": [{{ "task": "calculator", "id": "Add15and20_1", "dep": [], "args": [{{ "key": "a", "value": "15.5" }}, {{ "key": "b", "value": "20" }}] }}]
+
+Question: "Generate a plot for the population data."
+Plan: "plan": [{{ "task": "plot_population", "id": "PopulationPlot_1", "dep": [], "args": [{{ "key": "invalid_param", "value": "10" }}] }}]
