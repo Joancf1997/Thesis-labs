@@ -30,7 +30,6 @@ class Evaluation(TypedDict):
 # === Agent Class ===
 class PlanJudge():
     def __init__(self, settings: Settings):
-        print("Initializing judge...")
         self.llm_config = settings
         self.config_prompt()
         self.config_llm()

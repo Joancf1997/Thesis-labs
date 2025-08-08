@@ -193,6 +193,7 @@ class Agent():
         return "run_plan" if state.get("validation") else "task_planning"
 
     def ask(self, question: str):
+        print(question)
         run = AgentRun(session_id=self.session_id, user_input=question, status="running")
         self.db.add(run)
         self.db.commit()
@@ -209,6 +210,7 @@ class Agent():
         run.status = "completed"
         run.ended_at = datetime.utcnow()
         self.db.commit()
+
 
     def shutdown(self):
         self.session.ended_at = datetime.utcnow()
@@ -271,7 +273,8 @@ class Agent():
 
         # Plan evaluation GPT - Judge 
         plan_evaluation = self.planJudge.evaluate(state["question"], result["plan"])
-        print(plan_evaluation)
+        print(plan_evaluation["choice"])
+        print(plan_evaluation["reason"])
 
 
         return {"plan": result["plan"]}
