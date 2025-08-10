@@ -1,0 +1,96 @@
+As a critic, your task is to assess whether the AI assistant has properly planned the task based on the user’s
+request. To do so, carefully examine both the user’s request and the assistant’s output, and then provide
+a decision using either "Yes" or "No" ("Yes" indicates accurate planning and "No" indicates inaccurate
+planning). Additionally, provide a rationale for your choice using the following structure: {{"choice":
+"yes"/"no", "reason": "Your reason for your choice"}}. Please adhere to the following guidelines: 1. The
+tools must be selected from the following options: 
+Available tools:
+[
+  {{
+    "name": "plot_population",
+    "objective": "Generate a plot image showing population over years using an internal dataset.",
+    "arguments": [],
+    "output": {{
+      "type": "string",
+      "description": "File path to the generated plot image."
+    }}
+  }},
+  {{
+    "name": "summary_statistics",
+    "objective": "Calculate mean and standard deviation of a given numeric column in the dataset.",
+    "arguments": [
+      {{
+        "name": "column",
+        "type": "string",
+        "description": "Name of the numeric column."
+      }}
+    ],
+    "output": {{
+      "type": "dictionary",
+      "description": "A dictionary with keys 'mean' and 'std' representing the column's mean and standard deviation."
+    }}
+  }},
+  {{
+    "name": "predict_population_linear",
+    "objective": "Predict population for a given target year using linear regression on the dataset.",
+    "arguments": [
+      {{
+        "name": "target_year",
+        "type": "integer",
+        "description": "Year for which to predict the population."
+      }}
+    ],
+    "output": {{
+      "type": "float",
+      "description": "Predicted population for the target year."
+    }}
+  }},
+  {{
+    "name": "calculator",
+    "objective": "Add two numbers.",
+    "arguments": [
+      {{
+        "name": "a",
+        "type": "float",
+        "description": "First number."
+      }},
+      {{
+        "name": "b",
+        "type": "float",
+        "description": "Second number."
+      }}
+    ],
+    "output": {{
+      "type": "float",
+      "description": "Sum of the two numbers."
+    }}
+  }}
+]
+2. Please note that there exists a logical relationship and order between the tasks. 
+3. Simply focus on the correctness of the task planning without considering the task arguments. 
+
+Positive Examples:
+Question: "forecast the population for 2029 using the tools."
+Plan: "plan": [{{ "task": "predict_population_linear", "id": "ForecastPop2029_1", "dep": [], "args": [{{ "key": "target_year", "value": "2029" }}] }}]
+
+Question: "Add 15 and 20 using the calculator."
+Plan: "plan": [{{ "task": "calculator", "id": "Add15and20_1", "dep": [], "args": [{{ "key": "a", "value": "15" }}, {{ "key": "b", "value": "20" }}] }}]
+
+Question: "Generate a plot for the population data."
+Plan: "plan": [{{ "task": "plot_population", "id": "PopulationPlot_1", "dep": [], "args": [] }}]
+
+Negative Examples:
+Question: "Predict the population for 2035 using the tools."
+Plan: "plan": [{{ "task": "predict_population_linear", "id": "forecast_population_2035", "dep": [], "args": [{{ "key": "target_year", "value": "banana" }}] }}, {{ "task": "plot_population", "id": "population_forecast_plot_2035", "dep": ["forecast_population_2035"], "args": [] }}]
+
+Question: "Add 15 and 20 using the calculator."
+Plan: "plan": [{{ "task": "calculator", "id": "Add15and20_1", "dep": [], "args": [{{ "key": "a", "value": "15.5" }}, {{ "key": "b", "value": "20" }}] }}]
+
+Question: "Generate a plot for the population data."
+Plan: "plan": [{{ "task": "plot_population", "id": "PopulationPlot_1", "dep": [], "args": [{{ "key": "invalid_param", "value": "10" }}] }}]
+
+Current user request: {{query}} 
+
+AI assistant’s output plan: {{plan}} 
+
+Your judgement:
