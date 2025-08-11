@@ -1,0 +1,77 @@
+[
+  {
+    "user_query": "Forecast the population for 2029 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2029\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2029\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2029\", \"dep\": [\"forecast-population-2029\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Add 15 and 20 using the calculator.",
+    "task_plan": "{\"plan\": [{\"task\": \"calculator\", \"id\": \"Add15and20_1\", \"dep\": [], \"args\": [{\"key\": \"a\", \"value\": \"15\"}, {\"key\": \"b\", \"value\": \"20\"}]}]}",
+    "tools_used": ["calculator"]
+  },
+  {
+    "user_query": "Generate a plot for the population data.",
+    "task_plan": "{\"plan\": [{\"task\": \"plot_population\", \"id\": \"PopulationPlot_1\", \"dep\": [], \"args\": []}]}",
+    "tools_used": ["plot_population"]
+  },
+  {
+    "user_query": "Forecast the population for 2035 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2035\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2035\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2035\", \"dep\": [\"forecast-population-2035\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Add 7 and 12 using the calculator.",
+    "task_plan": "{\"plan\": [{\"task\": \"calculator\", \"id\": \"Add7and12_1\", \"dep\": [], \"args\": [{\"key\": \"a\", \"value\": \"7\"}, {\"key\": \"b\", \"value\": \"12\"}]}]}",
+    "tools_used": ["calculator"]
+  },
+  {
+    "user_query": "Forecast the population for 2025 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2025\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2025\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2025\", \"dep\": [\"forecast-population-2025\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Forecast the population for 2040 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2040\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2040\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2040\", \"dep\": [\"forecast-population-2040\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Add 100 and 200.",
+    "task_plan": "{\"plan\": [{\"task\": \"calculator\", \"id\": \"Add100and200_1\", \"dep\": [], \"args\": [{\"key\": \"a\", \"value\": \"100\"}, {\"key\": \"b\", \"value\": \"200\"}]}]}",
+    "tools_used": ["calculator"]
+  },
+  {
+    "user_query": "Forecast the population for 2030 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2030\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2030\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2030\", \"dep\": [\"forecast-population-2030\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Forecast the population for 2050 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2050\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2050\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2050\", \"dep\": [\"forecast-population-2050\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Add 10.5 and 20.5.",
+    "task_plan": "{\"plan\": [{\"task\": \"calculator\", \"id\": \"Add10_5and20_5_1\", \"dep\": [], \"args\": [{\"key\": \"a\", \"value\": \"10.5\"}, {\"key\": \"b\", \"value\": \"20.5\"}]}]}",
+    "tools_used": ["calculator"]
+  },
+  {
+    "user_query": "Forecast the population for 2022 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2022\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2022\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2022\", \"dep\": [\"forecast-population-2022\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  },
+  {
+    "user_query": "Generate a plot of population data from 2020.",
+    "task_plan": "{\"plan\": [{\"task\": \"plot_population\", \"id\": \"PopulationPlot2020_1\", \"dep\": [], \"args\": []}]}",
+    "tools_used": ["plot_population"]
+  },
+  {
+    "user_query": "Add 5 and 5.",
+    "task_plan": "{\"plan\": [{\"task\": \"calculator\", \"id\": \"Add5and5_1\", \"dep\": [], \"args\": [{\"key\": \"a\", \"value\": \"5\"}, {\"key\": \"b\", \"value\": \"5\"}]}]}",
+    "tools_used": ["calculator"]
+  },
+  {
+    "user_query": "Forecast the population for 2024 and then plot the data.",
+    "task_plan": "{\"plan\": [{\"task\": \"predict_population_linear\", \"id\": \"forecast-population-2024\", \"dep\": [], \"args\": [{\"key\": \"target_year\", \"value\": \"2024\"}]}, {\"task\": \"plot_population\", \"id\": \"plot-data-2024\", \"dep\": [\"forecast-population-2024\"], \"args\": []}]}",
+    "tools_used": ["predict_population_linear", "plot_population"]
+  }
+]
