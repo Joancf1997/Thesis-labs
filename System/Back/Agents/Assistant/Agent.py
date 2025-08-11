@@ -21,7 +21,8 @@ from app.models.agentRun import AgentRun
 from app.models.message import Message
 from app.models.agentStep import AgentStep
 from app.models.llmCall import LLMCall
-from app.crud.assistant import start_user_session, create_agent_run, create_agent_message, insert_logs, end_agent_run, create_agent_step, create_llm_call
+from app.models.toolCall import ToolCall
+from app.crud.assistant import start_user_session, create_agent_run, create_agent_message, insert_logs, end_agent_run, create_agent_step, create_llm_call, create_tool_call
 
 # === TypedDicts for state ===
 class State(TypedDict):
@@ -84,13 +85,13 @@ class Agent():
         return "run_plan" if state.get("validation") else "task_planning"
 
     def ask(self, question: str):
-        self.run_id = create_agent_run(self.db, AgentRun(session_id=self.session_id, user_input=question))
-        create_agent_message(self.db, Message(run_id=self.run_id, role="user", content=question, message_type="plain"))
+        self.run = create_agent_run(self.db, AgentRun(session_id=self.session_id, user_input=question))
+        create_agent_message(self.db, Message(run_id=self.run.id, role="user", content=question, message_type="plain"))
 
         for step in self.request.stream({"question": question}, self.session_config, stream_mode="updates"):
-            insert_logs(self.db, Log(run_id=self.run_id, level="info", message="Step update", data=step))
+            insert_logs(self.db, Log(run_id=self.run.id, level="info", message="Step update", data=step))
 
-        end_agent_run(self.db)
+        end_agent_run(self.db, self.run)
 
     def shutdown(self):
         self.session.ended_at = datetime.utcnow()
@@ -110,14 +111,14 @@ class Agent():
         self.plan_structure_llm = base_llm.with_structured_output(Plan)
 
     def direct_response(self, state: State):
-        step = create_agent_step(self.db, AgentStep(run_id=self.run_id, step_type="direct_response", input=state["question"]))
+        step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="direct_response", input=state["question"]))
         direct_prompt = PromptTemplate(input_variables=["user_request"], template=self.direct_response_prompt)
         prompt_str = direct_prompt.format(user_request=state["question"])
         response = self.llm.predict(input=prompt_str)
 
         create_llm_call(self.db, LLMCall(step_id=step.id, prompt=prompt_str, response=response, model_name=self.llm_config.model_name))
-        create_agent_message(self.db, Message(run_id=self.run_id, role="assistant", content=response, message_type="plain"))
-        insert_logs(self.db, Log(run_id=self.run_id, step_id=step.id, level="info", message="Direct response generated", data={"prompt": prompt_str, "response": response}))
+        create_agent_message(self.db, Message(run_id=self.run.id, role="assistant", content=response, message_type="plain"))
+        insert_logs(self.db, Log(run_id=self.run.id, step_id=step.id, level="info", message="Direct response generated", data={"prompt": prompt_str, "response": response}))
         return {"response": response}
     
     def check_tools(self, pred, label):
@@ -127,7 +128,7 @@ class Agent():
         return {"items": items_metric, "order": order_metric, "total": len(label)}
 
     def task_planning(self, state: State):
-        step = create_agent_step(self.db, AgentStep(run_id=self.run_id, step_type="task_planning", input=state["question"]))
+        step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="task_planning", input=state["question"]))
         prompt = self.task_planning_promp.invoke({"input": state["question"]})
         result = self.plan_structure_llm.invoke(prompt)
 
@@ -140,7 +141,7 @@ class Agent():
         return {"plan": result["plan"]}
 
     def validate_plan(self, state: State):
-        step = create_agent_step(self.db, AgentStep(run_id=self.run_id, step_type="validate_plan", input=state["plan"]))
+        step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="validate_plan", input=state["plan"]))
         task_ids = set()
         errors = []
 
@@ -161,10 +162,10 @@ class Agent():
                 errors.append(f"Dependencies must be a list for task {task_id}")
 
         if errors:
-            insert_logs(self.db, Log(run_id=self.run_id, step_id=step.id, level="error", message="Plan validation failed", data=errors))
+            insert_logs(self.db, Log(run_id=self.run.id, step_id=step.id, level="error", message="Plan validation failed", data=errors))
             return {"validation": False}
 
-        insert_logs(self.db, Log(run_id=self.run_id, step_id=step.id, level="info", message="Plan validation passed", data=state["plan"]))
+        insert_logs(self.db, Log(run_id=self.run.id, step_id=step.id, level="info", message="Plan validation passed", data=state["plan"]))
         return {"validation": True}
 
     def run_plan(self, state: State):
@@ -188,10 +189,10 @@ class Agent():
             for task in remaining[:]:
                 if all(dep in outputs for dep in task['dep']):
                     args = resolve_args(task.get('args', []))
-                    create_agent_step(self.db, AgentStep(run_id=self.run_id, step_type="run_plan", input=task))
+                    step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="run_plan", input=task))
                     func = ToolsLlm.TASK_FUNCS.get(task['task'])
                     result = func(**args)
-                    # self.db.add(ToolCall(step_id=step.id, input=task.get('args', []), output=result, status="success"))
+                    create_tool_call(self.db, ToolCall(step_id=step.id, input=task.get('args', []), output=result, status="success"))
                     outputs[task['id']] = result
                     remaining.remove(task)
                     progress = True
@@ -200,7 +201,7 @@ class Agent():
         return {"outputs": outputs}
 
     def generate_response(self, state: State):
-        step = create_agent_step(self.db, AgentStep(run_id=self.run_id, step_type="generate_response", input=state))
+        step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="generate_response", input=state))
 
         response_stage_prompt = PromptTemplate(
             input_variables=["user_request", "plan", "task_results"], template=self.response_prompt
