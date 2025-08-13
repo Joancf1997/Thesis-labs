@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, Text
 from app.db.base import Base
-from app.models._types import GUID
 
 class EvaluationDataset(Base):
     __tablename__ = "evaluation_dataset"

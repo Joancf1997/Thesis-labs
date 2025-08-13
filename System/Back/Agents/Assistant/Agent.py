@@ -88,10 +88,14 @@ class Agent():
         self.run = create_agent_run(self.db, AgentRun(session_id=self.session_id, user_input=question))
         create_agent_message(self.db, Message(run_id=self.run.id, role="user", content=question, message_type="plain"))
 
+        tools_used = []
         for step in self.request.stream({"question": question}, self.session_config, stream_mode="updates"):
+            if "task_planning" in step:
+                tools_used = step['task_planning']
             insert_logs(self.db, Log(run_id=self.run.id, level="info", message="Step update", data=step))
 
         end_agent_run(self.db, self.run)
+        return self.run, tools_used
 
     def shutdown(self):
         self.session.ended_at = datetime.utcnow()
@@ -121,22 +125,10 @@ class Agent():
         insert_logs(self.db, Log(run_id=self.run.id, step_id=step.id, level="info", message="Direct response generated", data={"prompt": prompt_str, "response": response}))
         return {"response": response}
     
-    def check_tools(self, pred, label):
-        items_metric = len(set(pred).intersection(label))     # items
-        order_metric = sum(1 for i in range(min(len(pred), len(label))) if pred[i] == label[i])  # Order
-        print("items", items_metric, "order", order_metric, "total", len(label))
-        return {"items": items_metric, "order": order_metric, "total": len(label)}
-
     def task_planning(self, state: State):
         step = create_agent_step(self.db, AgentStep(run_id=self.run.id, step_type="task_planning", input=state["question"]))
         prompt = self.task_planning_promp.invoke({"input": state["question"]})
         result = self.plan_structure_llm.invoke(prompt)
-
-        if True: 
-            task_list = [item["task"] for item in result["plan"]]
-            print(task_list)
-            self.check_tools(task_list, ['predict_population_linear', 'plot_population'])  
-
         create_llm_call(self.db, LLMCall(step_id=step.id, prompt=str(prompt), response=str(result), model_name=self.llm_config.model_name))
         return {"plan": result["plan"]}
 
@@ -212,5 +204,4 @@ class Agent():
         response = self.llm.predict(input=prompt_str)
         
         create_llm_call(self.db, LLMCall(step_id=step.id, prompt=prompt_str, response=response, model_name=self.llm_config.model_name))
-        print(response)
         return {"response": response}

@@ -9,14 +9,14 @@ from .llmCall import LLMCall
 from .log import Log
 from .evaluationDataset import EvaluationDataset
 from .experiments import (
-    Experiment, ExperimentRun, RunItem,
-    PlanningGpt4Eval, TaskEval, AgentRunFeedback, InterpretabilityRating,
-    UsefulnessRating, DecisionSupportMetric, SusSurvey
+    Experiment, ExperimentRun,
+    PlanningGpt4Eval, TaskEval, UserFeedback, InterpretabilityRating,
+    DecisionSupportMetric, SusSurvey
 )
+
 
 __all__ = [
     "User", "UserSession", "AgentRun", "AgentStep", "Message", "ToolCall", "LLMCall", "Log", "EvaluationDataset",
-    "Experiment", "ExperimentRun", "RunItem",
-    "PlanningGpt4Eval", "TaskEval", "AgentRunFeedback", "InterpretabilityRating",
-    "UsefulnessRating", "DecisionSupportMetric", "SusSurvey",
+    "Experiment", "ExperimentRun", "EvaluationDataset", "PlanningGpt4Eval", "TaskEval", "UserFeedback", 
+    "InterpretabilityRating", "DecisionSupportMetric", "SusSurvey"
 ]

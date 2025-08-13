@@ -36,7 +36,6 @@ class PlanJudge():
         self.plan_structure_llm = base_llm.with_structured_output(Evaluation)
 
     def evaluate(self, question: str, plan: str):
-        print("Initializing judge plan evaluation ")
         response_stage_prompt = PromptTemplate(
             input_variables=["query", "plan"], template=self.planning_evaluation_prompt
         )

@@ -2,7 +2,26 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from app.models.evaluationDataset import EvaluationDataset
+
+
+
+from sqlalchemy.orm import declarative_base
+Base = declarative_base()
+
+
+
+
+from sqlalchemy import Column, Integer, Text
+
+class EvaluationDataset(Base):
+    __tablename__ = "evaluation_dataset"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_query = Column(Text, nullable=False)
+    task_plan = Column(Text, nullable=False)
+    tools_used = Column(Text, nullable=False)
+
+
 
 # === DB CONFIGURATION ===
 DATABASE_URL = "postgresql://joseandres:@localhost/news_AI"

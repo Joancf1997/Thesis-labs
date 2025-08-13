@@ -7,6 +7,12 @@ from Assistant.Agent import Agent
 from app.db.session import SessionLocal
 from utils.utils import load_config, Settings
 from app.models.evaluationDataset import EvaluationDataset
+from app.models.experiments import (
+    Experiment, ExperimentRun,
+    PlanningGpt4Eval, TaskEval, UserFeedback, InterpretabilityRating
+)
+from app.crud.evaluation import start_agent_evaluation, create_experiment_run
+
 
 class AgentEval():
     def __init__(self):
@@ -30,6 +36,7 @@ class AgentEval():
             except json.JSONDecodeError:
                 pass
             dataset.append({
+                "id": r.id,
                 "user_query": r.user_query,
                 "task_plan": r.task_plan,
                 "tools_used": tools,
@@ -43,12 +50,28 @@ class AgentEval():
         print("items", items_metric, "order", order_metric, "total", len(label))
         return {"items": items_metric, "order": order_metric, "total": len(label)}
     
-    # def plan_task_eval(self):
-    #     task_list = [item["task"] for item in result["plan"]]
-    #     self.check_tools(task_list, ['predict_population_linear', 'plot_population'])  
+    def plan_task_eval(self, pred, labels):
+        task_list = [item["task"] for item in pred['plan']]
+        self.check_tools(task_list, labels)  
     
-    def eval(self):
+    def eval(self, name: str, description: str):
+        # Create the experiment 
+        exp = start_agent_evaluation(self.db, Experiment(name=name, description=description))
+        # Dataset
         for item in self.dataset: 
-            print(item['user_query'])
+            agent_run, tools = self.agent.ask(item['user_query'])
+            run_id = agent_run.id
+
+            # Experiment run 
+            create_experiment_run(self.db, ExperimentRun(experiment_id=exp.id, run_id=run_id, dataset_id=item['id']))
+
+            # GPT Judge Eval 
+
+            # Heuristic Task Eval 
+            print("pred")
+            print(tools)
+            print("label")
             print(item['tools_used'])
-            self.agent.ask(item['user_query'])
+            self.plan_task_eval(tools, item['tools_used'])
+
+            

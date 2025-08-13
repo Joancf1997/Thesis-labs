@@ -12,7 +12,6 @@ class AgentStep(Base):
     id = Column(GUID(), primary_key=True, default=uuid.uuid4)
     run_id = Column(GUID(), ForeignKey("agent_runs.id"))
     step_type = Column(String)
-    step_order = Column(String, nullable=True)
     input = Column(JSON)
     output = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
