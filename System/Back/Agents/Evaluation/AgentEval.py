@@ -11,7 +11,7 @@ from app.models.experiments import (
     Experiment, ExperimentRun,
     PlanningGpt4Eval, TaskEval, UserFeedback, InterpretabilityRating
 )
-from app.crud.evaluation import start_agent_evaluation, create_experiment_run
+from app.crud.evaluation import start_agent_evaluation, create_experiment_run, create_task_evaluation
 
 
 class AgentEval():
@@ -42,22 +42,32 @@ class AgentEval():
                 "tools_used": tools,
             })
         return dataset
-
     
     def check_tools(self, pred, label):
-        items_metric = len(set(pred).intersection(label))     # items
-        order_metric = sum(1 for i in range(min(len(pred), len(label))) if pred[i] == label[i])  # Order
-        print("items", items_metric, "order", order_metric, "total", len(label))
-        return {"items": items_metric, "order": order_metric, "total": len(label)}
+        pred_set = set(pred)
+        label_set = set(label)
+        tp = len(pred_set & label_set)
+        fp = len(pred_set - label_set)
+        fn = len(label_set - pred_set)
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1        = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        return {
+            "tp": tp, "fp": fp, "fn": fn,
+            "precision": precision,
+            "recall": recall,
+            "f1": f1
+        }
+
     
     def plan_task_eval(self, pred, labels):
-        task_list = [item["task"] for item in pred['plan']]
-        self.check_tools(task_list, labels)  
+        return self.check_tools(pred, labels)
     
     def eval(self, name: str, description: str):
         # Create the experiment 
         exp = start_agent_evaluation(self.db, Experiment(name=name, description=description))
-        # Dataset
+        
+        # Dataset Iteration 
         for item in self.dataset: 
             agent_run, tools = self.agent.ask(item['user_query'])
             run_id = agent_run.id
@@ -67,11 +77,21 @@ class AgentEval():
 
             # GPT Judge Eval 
 
-            # Heuristic Task Eval 
-            print("pred")
-            print(tools)
-            print("label")
-            print(item['tools_used'])
-            self.plan_task_eval(tools, item['tools_used'])
+
+            # Heuristic Task Eval
+            task_list = [item["task"] for item in tools['plan']]
+            task_evaluation = self.plan_task_eval(task_list, item['tools_used']) 
+            create_task_evaluation(self.db,TaskEval(run_id=run_id, 
+                                   gold_task_sequence=task_list, 
+                                   predicted_task_sequence=item['tools_used'], 
+                                   tp=task_evaluation['tp'],
+                                   fp=task_evaluation['fp'],
+                                   fn=task_evaluation['fn'],
+                                   f1=task_evaluation['f1'],
+                                   precision=task_evaluation['precision'],
+                                   recall=task_evaluation['recall']
+                                ) ) 
+
+            
 
             

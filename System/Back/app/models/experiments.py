@@ -59,12 +59,13 @@ class TaskEval(Base):
 
     gold_task_sequence = Column(JSON)            # null in production
     predicted_task_sequence = Column(JSON, nullable=False)
-    exact_match = Column(Boolean, default=False, nullable=False)
 
     tp = Column(Integer, default=0, nullable=False)
     fp = Column(Integer, default=0, nullable=False)
     fn = Column(Integer, default=0, nullable=False)
     f1 = Column(Numeric(6, 4))
+    precision = Column(Numeric(6, 4))
+    recall = Column(Numeric(6, 4))
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
