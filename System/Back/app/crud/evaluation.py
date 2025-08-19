@@ -32,3 +32,7 @@ def create_experiment_run(db: Session, exp_run: ExperimentRun):
 def create_task_evaluation(db: Session, task_val: TaskEval): 
     db.add(task_val)    
     db.commit()
+
+def create_gptJudge_evaluation(db: Session, judeEval: PlanningGpt4Eval): 
+    db.add(judeEval)    
+    db.commit()

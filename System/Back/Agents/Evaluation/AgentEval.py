@@ -7,22 +7,24 @@ from Assistant.Agent import Agent
 from app.db.session import SessionLocal
 from utils.utils import load_config, Settings
 from app.models.evaluationDataset import EvaluationDataset
+from Judge.GPTJudge import PlanJudge
 from app.models.experiments import (
     Experiment, ExperimentRun,
     PlanningGpt4Eval, TaskEval, UserFeedback, InterpretabilityRating
 )
-from app.crud.evaluation import start_agent_evaluation, create_experiment_run, create_task_evaluation
+from app.crud.evaluation import start_agent_evaluation, create_experiment_run, create_task_evaluation, create_gptJudge_evaluation
 
 
 class AgentEval():
     def __init__(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(base_dir, "../config/settings.yaml")
-        settings = Settings(**load_config(config_path))
+        self.settings = Settings(**load_config(config_path))
         init_db()                  
         self.db = SessionLocal()   
         user_id = uuid.uuid4()
-        self.agent = Agent(settings, db=self.db, user_id=user_id)
+        self.agent = Agent(self.settings, db=self.db, user_id=user_id)
+        self.gptJudge = PlanJudge(self.settings)
         self.dataset = self.load_task_plan_dataset()
 
 
@@ -66,7 +68,7 @@ class AgentEval():
     def eval(self, name: str, description: str):
         # Create the experiment 
         exp = start_agent_evaluation(self.db, Experiment(name=name, description=description))
-        
+
         # Dataset Iteration 
         for item in self.dataset: 
             agent_run, tools = self.agent.ask(item['user_query'])
@@ -76,7 +78,15 @@ class AgentEval():
             create_experiment_run(self.db, ExperimentRun(experiment_id=exp.id, run_id=run_id, dataset_id=item['id']))
 
             # GPT Judge Eval 
-
+            judge = self.gptJudge.evaluate(question=item['user_query'], plan=tools['plan'])
+            create_gptJudge_evaluation(self.db, PlanningGpt4Eval(
+                run_id=run_id,
+                judge_model=self.settings.llm.model_name,
+                prompt_used="--",
+                raw_response="--",
+                choice= (1 if judge['choice'] == "yes" else 0),
+                reason=judge['reason'],
+            ))
 
             # Heuristic Task Eval
             task_list = [item["task"] for item in tools['plan']]

@@ -1,15 +1,12 @@
 import os
 import sys
-import logging
 from typing import Literal
 
 from pydantic import Field
 from typing_extensions import TypedDict
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import PromptTemplate
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.utility import Settings, load_prompt
-
+from utils.utils import load_prompt, Settings
 
 class Evaluation(TypedDict):
     choice: Literal["Yes", "No"] = Field(description="'Yes' indicates accurate planning and 'No' indicates inaccurateplanning")
@@ -18,7 +15,7 @@ class Evaluation(TypedDict):
 # === Agent Class ===
 class PlanJudge():
     def __init__(self, settings: Settings):
-        self.llm_config = settings
+        self.llm_config = settings.llm
         self.config_prompt()
         self.config_llm()
 
